@@ -12,7 +12,10 @@ dotenv.config();
 
 const app = express();
 app.use(cors({
-  origin: "https://userdashboard-11938.web.app",
+  origin: [
+    "https://userdashboard-11938.web.app",
+    "http://localhost:5173"
+  ],
   credentials: true
 }));
 
