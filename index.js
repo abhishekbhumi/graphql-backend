@@ -9,8 +9,6 @@ import { UAParser } from 'ua-parser-js';
 import dotenv from "dotenv";
 dotenv.config();
 
-
-await connectDB();
 const app = express();
 
 const server = new ApolloServer({
@@ -18,31 +16,46 @@ const server = new ApolloServer({
   resolvers,
   csrfPrevention: true,
 });
-app.use(
-  "/graphql",
-  expressMiddleware(server, {
-    context: async ({ req }) => {
-      const ip =
-        req.headers["x-forwarded-for"]?.split(",")[0] ||
-        req.socket?.remoteAddress ||
-        "Unknown";
-      const parser = new UAParser(req.headers["user-agent"]);
-      const ua = parser.getResult();
-      const device = `${ua.os.name} ${ua.os.version} - ${ua.browser.name} ${ua.browser.version}`;
 
-      const auth = req?.headers?.authorization ?? "";
-      const token = auth.startsWith("Bearer ") ? auth.slice(7) : null;
-      const payload = token ? verifyToken(token) : null;
+async function start() {
+  try {
+    await connectDB();
+    await server.start();
 
-      return {
-        user: payload ? { id: payload.userId, isAdmin: !!payload.isAdmin } : null,
-        ip,
-        device,
-      };
-    },
-  })
-);
-app.listen(process.env.PORT || 10000, () => {
-  console.log("Server running on port", process.env.PORT || 10000);
-});
+    app.use(
+      "/graphql",
+      express.json(),
+      expressMiddleware(server, {
+        context: async ({ req }) => {
+          const ip =
+            req.headers["x-forwarded-for"]?.split(",")[0] ||
+            req.socket?.remoteAddress ||
+            "Unknown";
+          const parser = new UAParser(req.headers["user-agent"]);
+          const ua = parser.getResult();
+          const device = `${ua.os.name} ${ua.os.version} - ${ua.browser.name} ${ua.browser.version}`;
 
+          const auth = req?.headers?.authorization ?? "";
+          const token = auth.startsWith("Bearer ") ? auth.slice(7) : null;
+          const payload = token ? verifyToken(token) : null;
+
+          return {
+            user: payload ? { id: payload.userId, isAdmin: !!payload.isAdmin } : null,
+            ip,
+            device,
+          };
+        },
+      })
+    );
+
+    const port = process.env.PORT || 10000;
+    app.listen(port, () => {
+      console.log("Server running on port", port);
+    });
+  } catch (err) {
+    console.error("Failed to start:", err);
+    process.exit(1);
+  }
+}
+
+start();
