@@ -2,6 +2,8 @@
 # Environment variables
 
 
+
+node_modules
 .env
 # Firebase Admin service account JSON (never commit this!)
 
