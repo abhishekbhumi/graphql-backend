@@ -1,6 +1,6 @@
 import express from "express";
 import {ApolloServer} from "@apollo/server";
-import { expressMiddleware } from '@apollo/server/express4';
+import { expressMiddleware } from "@as-integrations/express5";
 import connectDB from "./db.js";
 import typeDefs from "./schemas/typeDefs.js";
 import resolvers from "./resolvers/resolvers.js";
