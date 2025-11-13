@@ -7,21 +7,9 @@ import resolvers from "./resolvers/resolvers.js";
 import { verifyToken } from "./utils/auth.js";
 import { UAParser } from 'ua-parser-js';
 import dotenv from "dotenv";
-import admin from "firebase-admin";
-import functions from "firebase-functions";
 dotenv.config();
 
 
-const privateKey = process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n");
-const serviceAccount = {
-  projectId: process.env.FIREBASE_PROJECT_ID,
-  clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-  privateKey,
-};
-
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount)
-});
 await connectDB();
 const app = express();
 
@@ -54,5 +42,7 @@ app.use(
     },
   })
 );
-// Export the function for Firebase
-export const graphql = functions.https.onRequest(app);
+app.listen(process.env.PORT || 10000, () => {
+  console.log("Server running on port", process.env.PORT || 10000);
+});
+
