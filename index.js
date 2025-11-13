@@ -1,3 +1,4 @@
+import cors from "cors";
 import express from "express";
 import {ApolloServer} from "@apollo/server";
 import { expressMiddleware } from "@as-integrations/express5";
@@ -10,6 +11,11 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const app = express();
+app.use(cors({
+  origin: "https://userdashboard-11938.web.app",
+  credentials: true
+}));
+
 
 const server = new ApolloServer({
   typeDefs,
