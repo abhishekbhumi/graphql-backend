@@ -1,0 +1,9 @@
+# .gitignore
+# Environment variables
+
+
+.env
+# Firebase Admin service account JSON (never commit this!)
+
+
+
