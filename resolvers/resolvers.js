@@ -85,6 +85,10 @@ const resolvers = {
         },
         products: async () => {
             return await Product.find().sort({ createdAt: -1 }).exec();
+        },        
+        product: async (_, { id }, context) => {
+            return await Product.findById(id).exec();
+            
         },
         cart: async (_, {  }, context) => {
             const user = checkAuth(context);

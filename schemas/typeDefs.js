@@ -92,6 +92,7 @@ const typeDefs = `#graphql
     myComments: [Comment!]!
     allComments: [Comment!]!
     products: [Product!]!
+    product(id: ID!): Product
     cart: Cart
     cartItemByProductId(productId: ID!): CartItem
     bookmarks : [Bookmark!]!
