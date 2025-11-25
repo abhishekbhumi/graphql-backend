@@ -150,7 +150,7 @@ const resolvers = {
             try{
                 const res = await fetch(`https://ipinfo.io/${ip}/json?token=${process.env.IPINFO_KEY}`);
                 const data = await res.json();
-                  if (data.loc) {
+                if (data.loc) {
                     [lat, long] = data.loc.split(',').map(Number);
                 }
                 location = `${data.city}, ${data.region}, ${data.country}`;                
@@ -347,7 +347,8 @@ const resolvers = {
                 comment,
             });
             await review.save();
-            return await review.populate('product').populate('user');
+            await review.populate([{ path: 'product' }, { path: 'user' }]);
+            return review;
         },
         updateReview: async (_, { id, rating, comment }, context) => {
             const user = checkAuth(context);
