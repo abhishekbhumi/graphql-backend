@@ -5,6 +5,7 @@ import Cart from '../models/Cart.js';
 import User from "../models/User.js";
 import Comment from '../models/Comment.js';
 import Bookmark from '../models/Bookmark.js';
+import Review from '../models/Review.js';
 import { generateToken } from "../utils/auth.js";
 import checkAuth from '../utils/checkAuth.js';
 import fetch from 'node-fetch';
@@ -89,6 +90,9 @@ const resolvers = {
         product: async (_, { id }, context) => {
             return await Product.findById(id).exec();
             
+        },
+        reviewsByProduct: async (_, { productId }) => {
+            return await Review.find({ product: productId }).sort({ createdAt: -1 }).populate('product').populate('user').exec();
         },
         cart: async (_, {  }, context) => {
             const user = checkAuth(context);
@@ -334,9 +338,56 @@ const resolvers = {
             const result = await Bookmark.findOneAndDelete({ user: user.id, product: productId }).exec();
             return result ? true : false;
         },
+        addReview: async (_, { productId, rating, comment }, context) => {
+            const user = checkAuth(context);
+            const review = new Review({
+                product: productId,
+                user: user.id,
+                rating,
+                comment,
+            });
+            await review.save();
+            return await review.populate('product').populate('user');
+        },
+        updateReview: async (_, { id, rating, comment }, context) => {
+            const user = checkAuth(context);
+            const review = await Review.findById(id).exec();
+            if (!review) throw new Error("Review not found");
+            const isAuthor = String(review.user) === String(user.id);   
+            if (!isAuthor && !user.isAdmin) {
+                throw new Error("Forbidden — you can only update your own reviews");
+            }
+            if (rating !== undefined) review.rating = rating;
+            if (comment !== undefined) review.comment = comment;
+            review.updatedAt = new Date();
+            await review.save();
+            return await review.populate('product').populate('user');
+        },
+        deleteReview: async (_, { id }, context) => {
+            const user = checkAuth(context);
+            const review = await Review.findById(id).exec();
+            if (!review) throw new Error("Review not found");
+            const isAuthor = String(review.user) === String(user.id);
+            if (!isAuthor && !user.isAdmin) {
+                throw new Error("Forbidden — you can only delete your own reviews");
+            }
+            await Review.findByIdAndDelete(id).exec();
+            return true;
+        },   
 
-},
-   
+    },
+    Product: {
+        reviews: async (parent) => {
+            return await Review.find({ product: parent.id })
+                .populate("user")
+                .sort({ createdAt: -1 })
+                .exec();
+        },
+
+        reviewsCount: async (parent) => {
+            return await Review.countDocuments({ product: parent.id });
+        },
+    },
 };
 
 

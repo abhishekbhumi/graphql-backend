@@ -42,6 +42,8 @@ const typeDefs = `#graphql
     image: String!
     createdAt: DateTime
     updatedAt: DateTime
+    reviews: [Review!]!
+    reviewsCount : Int!
   } 
   type CartItem {
     product: Product!
@@ -65,7 +67,7 @@ const typeDefs = `#graphql
     }
 
   type Todo {
-     id: ID!
+    id: ID!
     name: String!
     title: String
     age: Int
@@ -78,6 +80,16 @@ const typeDefs = `#graphql
     createdAt: DateTime
     updatedAt: DateTime
 
+  }
+  
+  type Review {
+    id: ID!
+    product: Product!
+    user: User!
+    rating: Int!
+    comment: String
+    createdAt: DateTime
+    updatedAt: DateTime
   }
     
   
@@ -97,6 +109,7 @@ const typeDefs = `#graphql
     cartItemByProductId(productId: ID!): CartItem
     bookmarks : [Bookmark!]!
     bookmarksGroupedByUser : [[Bookmark!]!]!
+    reviewsByProduct(productId: ID!): [Review!]!
 
   }
 
@@ -146,6 +159,9 @@ const typeDefs = `#graphql
     addBookmark(productId: ID!): Bookmark!
     removeBookmark(productId: ID!): Boolean!
 
+    addReview(productId: ID!, rating: Int!, comment: String): Review!
+    updateReview(id: ID!, rating: Int, comment: String): Review!
+    deleteReview(id: ID!): Boolean!
   
   }
 `;
