@@ -362,7 +362,8 @@ const resolvers = {
             if (comment !== undefined) review.comment = comment;
             review.updatedAt = new Date();
             await review.save();
-            return await review.populate('product').populate('user');
+            await review.populate([{ path: 'product' }, { path: 'user' }]);
+            return review;
         },
         deleteReview: async (_, { id }, context) => {
             const user = checkAuth(context);
