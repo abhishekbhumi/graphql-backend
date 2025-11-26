@@ -278,7 +278,7 @@ const resolvers = {
                 throw new Error("Forbidden — only admins can add products");
             }
             const product = new Product({ name, price, description, image });
-            return await product.save();    
+            return await product.save();
         },
         addToCart: async (_, { productId, quantity }, context) => {
             const user = checkAuth(context);

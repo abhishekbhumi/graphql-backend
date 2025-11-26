@@ -23,7 +23,7 @@ const typeDefs = `#graphql
   }
    type AuthPayload {
     token: String!
-    user: User! 
+    user: User!
   }  
 
  type Comment {
@@ -32,11 +32,11 @@ const typeDefs = `#graphql
     author: User!
     createdAt: DateTime
     updatedAt: DateTime
-  } 
+  }
   
- type Product {
+type Product {
     id: ID!
-    name: String! 
+    name: String!
     price: Float!
     description: String!
     image: String!
@@ -44,7 +44,7 @@ const typeDefs = `#graphql
     updatedAt: DateTime
     reviews: [Review!]!
     reviewsCount : Int!
-  } 
+  }
   type CartItem {
     product: Product!
     quantity: Int!
