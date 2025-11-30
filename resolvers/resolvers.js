@@ -6,9 +6,13 @@ import User from "../models/User.js";
 import Comment from '../models/Comment.js';
 import Bookmark from '../models/Bookmark.js';
 import Review from '../models/Review.js';
+import Message from '../models/Message.js';
+import Chat from '../models/Chat.js';
 import { generateToken } from "../utils/auth.js";
 import checkAuth from '../utils/checkAuth.js';
 import fetch from 'node-fetch';
+import { getSocketServer } from '../socket.js';
+import { is } from 'useragent';
 
 
 
@@ -133,6 +137,16 @@ const resolvers = {
             });
             return Object.values(grouped);
         },
+        getGlobalChatMessages: async (_, { limit }, context) => {
+            const user = checkAuth(context);
+             const chat = await Chat.findOne({ type: "GLOBAL" }).exec();
+            if (!chat) return [];
+            const messages = await Message.find({chatId : chat._id})
+            .sort({ createdAt: -1 })
+            .limit(limit)
+            .populate([{ path: 'sender' }, { path: 'chatId' }]);
+            return messages.reverse();
+        },
 
     },
     Mutation: {        
@@ -188,8 +202,21 @@ const resolvers = {
             };
             const token = generateToken(user);
             console.log("User login:", user.lastLogin);
+            try {
+                const io = getSocketServer();
+                    io.emit("admin:login", {
+                    userId: user._id.toString(),
+                    email: user.email,
+                    device: user.lastLogin?.device,
+                    location: user.lastLogin?.location,
+                    suspicious: user.lastLogin?.suspicious,
+                    timestamp: user.lastLogin?.timestamp,
+                    });
+            } catch (err) {
+                console.error("Failed to emit suspicious login event:", err.message);
+            }
 
-            return { token, user: { id: user._id.toString(), email: user.email, isAdmin: user.isAdmin, lastLogin: user.lastLogin, } };
+            return { token, user: { id: user._id.toString(), email: user.email, isAdmin: user.isAdmin, username: user.username, lastLogin: user.lastLogin, } };
         },
         signup: async (_, { email, password, username, isAdmin = false }) => {
                 email = email.toLowerCase().trim();
@@ -245,8 +272,25 @@ const resolvers = {
         addComment: async (_, { content }, context) => {
             const user = checkAuth(context);
             const comment = new Comment({ content, author: user.id });
-            await comment.save();   
-            return await comment.populate('author');
+            let saved  = await comment.save();   
+            saved = await comment.populate('author');
+            try {
+            const io = getSocketServer();
+            io.emit("comment:new", {
+            id: saved._id.toString(),
+            content: saved.content,
+            createdAt: saved.createdAt,
+            updatedAt: saved.updatedAt,
+            author: {
+                id: saved.author._id?.toString?.() || saved.author.id,
+                email: saved.author.email,
+                username: saved.author.username,
+            },
+            });
+        } catch (err) {
+            console.error("Failed to emit comment:new event", err.message);
+        }
+        return saved
     },
     updateComment: async (_, { id, content }, context) => {
             const user = checkAuth(context);
@@ -290,11 +334,28 @@ const resolvers = {
             } else {
                 cart.items.push({ product: productId, quantity });
             }
-            await cart.save();
-            return  await Cart.findById(cart._id)
+            let saved  = await cart.save();   
+            saved = await Cart.findById(cart._id)
             .populate("items.product")
             .populate("user")
             .exec();
+            try {
+            const io = getSocketServer();
+            io.emit("cart:new", {
+            id: saved._id.toString(),
+            user: {
+                id: saved.user._id?.toString?.() || saved.user.id,
+                email: saved.user.email,
+                username: saved.user.username,
+            },
+            items: saved.items,
+            createdAt: saved.createdAt,
+            updatedAt: saved.updatedAt,
+            });
+        } catch (err) {
+            console.error("Failed to emit cart:new event", err.message);
+        }
+        return saved
         },
            removeFromCart: async (_, { productId, quantity }, context) => {
             const user = checkAuth(context);
@@ -376,6 +437,50 @@ const resolvers = {
             await Review.findByIdAndDelete(id).exec();
             return true;
         },   
+         sendGlobalMessage: async (_, { message }, context) => {
+        const user = checkAuth(context);
+        let chat = await Chat.findOne({ type: "GLOBAL" }).exec();
+        if (!chat) {
+            chat  = new Chat({ 
+                name: "Global Chat", 
+                type: "GLOBAL", 
+                participants: [user.id] 
+            });
+         chat =  await chat.save();
+        }
+        else if (!chat.participants.includes(user.id)) {
+            chat.participants.push(user.id);
+            await chat.save();
+        }   
+        let populatedMessage = new Message({
+            chatId: chat._id,
+            sender: user.id,
+            message,
+        });
+        populatedMessage = await populatedMessage.save();
+        populatedMessage = await populatedMessage.populate([{ path: 'sender' }, { path: 'chatId' }]);
+        //websocket emit
+        try {
+            const io = getSocketServer();
+            io.emit("chat:message", {
+                id: populatedMessage._id.toString(),
+                chatId: populatedMessage.chatId._id.toString(),
+                createdAt: populatedMessage.createdAt,
+                updatedAt: populatedMessage.updatedAt,
+                isEdited: populatedMessage.isEdited,
+                isDeleted: populatedMessage.isDeleted,
+                message: populatedMessage.message,
+                sender: {
+                    id: populatedMessage.sender._id?.toString?.() || populatedMessage.sender.id,
+                    email: populatedMessage.sender.email,
+                    username: populatedMessage.sender.username,
+                },
+            });
+        } catch (err) {
+            console.error("Failed to emit chat:message event", err.message);
+        }
+        return populatedMessage;
+    },
 
     },
     Product: {
@@ -390,6 +495,7 @@ const resolvers = {
             return await Review.countDocuments({ product: parent.id });
         },
     },
+   
 };
 
 

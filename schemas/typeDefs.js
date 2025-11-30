@@ -91,7 +91,26 @@ type Product {
     createdAt: DateTime
     updatedAt: DateTime
   }
-    
+  
+  type Chat{
+    id: ID!
+    name: String!
+    participants: [User!]!
+    lastMessage: Message
+    isActive: Boolean!
+    createdAt: DateTime
+    updatedAt: DateTime
+  }
+  type Message{
+    id: ID!
+    chatId: Chat! 
+    sender: User!
+    message: String!
+    isEdited: Boolean!
+    isDeleted: Boolean!
+    createdAt: DateTime
+    updatedAt: DateTime
+  }  
   
 
   type Query {
@@ -110,6 +129,7 @@ type Product {
     bookmarks : [Bookmark!]!
     bookmarksGroupedByUser : [[Bookmark!]!]!
     reviewsByProduct(productId: ID!): [Review!]!
+    getGlobalChatMessages(limit: Int): [Message!]!
 
   }
 
@@ -119,6 +139,9 @@ type Product {
   signup(email: String!, password: String!, username : String!, isAdmin: Boolean): AuthPayload!
 
   login(email: String!, password: String!): AuthPayload!
+
+  requestPasswordReset(email: String!): Boolean!
+  resetPassword(token: String!, newPassword: String!): Boolean!
 
     addTodo(
       name: String!
@@ -162,6 +185,7 @@ type Product {
     addReview(productId: ID!, rating: Int!, comment: String): Review!
     updateReview(id: ID!, rating: Int, comment: String): Review!
     deleteReview(id: ID!): Boolean!
+    sendGlobalMessage(message: String!): Message!
   
   }
 `;

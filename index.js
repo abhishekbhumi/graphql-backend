@@ -1,11 +1,13 @@
 import cors from "cors";
 import express from "express";
+import http from "http";
 import {ApolloServer} from "@apollo/server";
 import { expressMiddleware } from "@as-integrations/express5";
 import connectDB from "./db.js";
 import typeDefs from "./schemas/typeDefs.js";
 import resolvers from "./resolvers/resolvers.js";
 import { verifyToken } from "./utils/auth.js";
+import { initializeSocketServer } from "./socket.js";
 import { UAParser } from 'ua-parser-js';
 import dotenv from "dotenv";
 dotenv.config();
@@ -18,6 +20,9 @@ app.use(cors({
   ],
   credentials: true
 }));
+
+const httpServer = http.createServer(app);
+initializeSocketServer(httpServer);
 
 
 const server = new ApolloServer({
@@ -58,8 +63,8 @@ async function start() {
     );
 
     const port = process.env.PORT || 10000;
-    app.listen(port, () => {
-      console.log("Server running on port", port);
+    httpServer.listen(port, () => {
+      console.log("HTTP + WebSocket server running on port", port);
     });
   } catch (err) {
     console.error("Failed to start:", err);
