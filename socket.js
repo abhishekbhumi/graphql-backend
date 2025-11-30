@@ -43,11 +43,17 @@ export function initializeSocketServer(server) {
                         Array.from(activeUsers.values())
                     );
             });
+            socket.on("typing:start", (payload) => {
+                socket.broadcast.emit("typing:start", payload);
+            });
+            socket.on("typing:stop", (payload) => {
+                socket.broadcast.emit("typing:stop", payload);
+            });
 
 
-        socket.on("disconnect", () => {
-            console.log("WebSocket client disconnected:", socket.id);
-        });
+            socket.on("disconnect", () => {
+                console.log("WebSocket client disconnected:", socket.id);
+            });
         });
     }
     return ioInstance;
