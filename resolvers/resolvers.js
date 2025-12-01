@@ -13,6 +13,8 @@ import checkAuth from '../utils/checkAuth.js';
 import fetch from 'node-fetch';
 import { getSocketServer } from '../socket.js';
 import { is } from 'useragent';
+import { askGemini } from '../utils/gemini.js';
+import  {generateAiMessageForProducts} from '../utils/gemini.js';
 
 
 
@@ -147,6 +149,20 @@ const resolvers = {
             .populate([{ path: 'sender' }, { path: 'chatId' }]);
             return messages.reverse();
         },
+        suggestProducts: async (_, { query }, context) => {
+            const products = await Product.find({
+                $or: [
+                    { name: new RegExp(query, "i") },
+                    { description: new RegExp(query, "i") },
+                ],
+            })
+            .limit(5).exec();
+            const aiMessage = await generateAiMessageForProducts(query, products);
+            return {
+                message: aiMessage,
+                products
+            };
+        },
 
     },
     Mutation: {        
@@ -230,7 +246,7 @@ const resolvers = {
         },
         addTodo: async (_, { name, title, age, bio, company, experience, description,address }, context) => {
             const user = checkAuth(context);
-            const todo = new Todo({ name, title, age, bio, company, experience, description,  address, createdBy: user.id,});
+            const todo = new Todo({ name, title, age, bio, company, experience, description,  address, createdBy: user.id });
             return await todo.save();
         },
         
@@ -376,6 +392,17 @@ const resolvers = {
             .populate("user")
             .exec();
         },
+        clearCart: async (_, __, context) => {
+            const user = checkAuth(context);
+            let cart = await Cart.findOne({ user: user.id });   
+            if (!cart) cart = new Cart({ user: user.id, items: [] });
+            cart.items = [];
+            await cart.save();
+            return  await Cart.findById(cart._id)
+            .populate("items.product")
+            .populate("user")
+            .exec();
+        },
         addBookmark: async (_, { productId }, context) => {
             const user = checkAuth(context);
             const existing = await Bookmark.findOne({
@@ -481,6 +508,13 @@ const resolvers = {
         }
         return populatedMessage;
     },
+        askGemini: async (_, { prompt }, context) => {
+            const user = checkAuth(context);
+            const response = await askGemini(prompt);
+            return response;
+        },
+
+
 
     },
     Product: {

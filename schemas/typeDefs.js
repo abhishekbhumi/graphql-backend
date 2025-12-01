@@ -111,7 +111,11 @@ type Product {
     createdAt: DateTime
     updatedAt: DateTime
   }  
-  
+   
+  type AiProductSuggestion{
+    message: String!
+    products: [Product!]!
+    }
 
   type Query {
     me: User
@@ -130,6 +134,7 @@ type Product {
     bookmarksGroupedByUser : [[Bookmark!]!]!
     reviewsByProduct(productId: ID!): [Review!]!
     getGlobalChatMessages(limit: Int): [Message!]!
+    suggestProducts(query : String): AiProductSuggestion!
 
   }
 
@@ -179,6 +184,7 @@ type Product {
       image: String!): Product!
     addToCart(productId: ID!, quantity: Int!): Cart!
     removeFromCart(productId: ID!, quantity: Int!): Cart!
+    clearCart: Cart!
     addBookmark(productId: ID!): Bookmark!
     removeBookmark(productId: ID!): Boolean!
 
@@ -186,6 +192,7 @@ type Product {
     updateReview(id: ID!, rating: Int, comment: String): Review!
     deleteReview(id: ID!): Boolean!
     sendGlobalMessage(message: String!): Message!
+    askGemini(prompt: String!): String!
   
   }
 `;
